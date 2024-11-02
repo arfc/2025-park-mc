@@ -90,13 +90,13 @@
 \tikzstyle{decision} = [diamond, thick, aspect=2, minimum width=2cm, minimum height=2cm, text centered, draw=black, fill=green, text width=6em]
 \tikzstyle{arrow} = [thick,->,>=stealth]
 
-\title{A Hybrid $S_N$-Diffusion Method for Control Rod Modeling in Molten Salt Reactors}
+\title{A Hybrid $S_N$-Diffusion Method for Molten Salt Reactor Control Rod Modeling}
 
 %%% Authors (use arabic numbers: 1, 2, 3, etc. for affiliationNumber)
 %%% \addAuthor{GivenName MiddleInitial. FamilyName}{affiliationNumber}
 \addAuthor[smpark3@illinois.edu]{Sun Myung Park}{1}
 \addAuthor{Kathryn D. Huff}{1}
-\addAuthor{Madicken Munk}{2}
+\addAuthor{Madicken Munk}{1,2}
 % To move the * for the corresponding author move the Email address for primary/corresponding author only. Move the * next to the appropriate name. Do not use all capital letters for any part of the author's name] and insert it before the Author addition ex. if corresponding author is A then adjust \addAuthor[email]{Author A}{1}
 
 %%% Affiliations (from authblk)
@@ -104,12 +104,11 @@
 \addAffiliation{1}{University of Illinois Urbana-Champaign, Urbana, IL}
 \addAffiliation{2}{Oregon State University, Corvallis, OR}
 
-
 %%% Write text for abstract
 %%% Most text modifying commands will work in abstract
 \Abstract{%
 This paper presents a hybrid $S_N$-diffusion method for accurate modeling of control rods in
-molten salt reactors. Neutron diffusion methods struggle with strong neutron
+time-dependent molten salt reactor simulations. Neutron diffusion methods struggle with strong neutron
 absorptivity of control rods, while neutron transport methods are computationally prohibitive
 for time-dependent reactor analyses. The proposed hybrid method combines the strengths of both
 approaches by applying transport corrections generated using the $S_N$ method near control rods.
@@ -128,7 +127,7 @@ time-dependent analyses.
 \keywords{control rod modeling, molten salt reactor, neutron transport, reactor physics}
 
 %%% Provide a short title for the header on odd pages
-\shortTitle{A Hybrid $S_N$-Diffusion Method for Control Rod Modeling in Molten Salt Reactors}
+\shortTitle{A Hybrid $S_N$-Diffusion Method for Molten Salt Reactor Control Rod Modeling}
 
 %%% Provide a short author listing for the header on even pages
 \authorHead{S. Park, et al.}
@@ -141,66 +140,35 @@ time-dependent analyses.
 
 \glspl*{MSR} are advanced reactors noted for strong passive safety due to their liquid fuel form,
 negative temperature reactivity feedback, and low operating pressure. While some \gls*{MSR} concepts
-completely eliminated control rods from their designs, many designs still retain control rods for
-reactivity control and emergency scram. Accurate control rod modeling capability is essential for
-studying reactor behavior in transient scenarios involving control rod movement.
+completely eliminated control rods from their designs, many still retain them.
 
 Routine time-dependent and spatially-resolved reactor analyses remain in the domain of neutron
 diffusion methods due to the large computational expense of neutron transport methods. Several
 transport correction techniques exist in the literature for improving neutron flux and
 $k_\text{eff}$ estimates of neutron diffusion methods augmented by correction parameters in
 various forms
-\cite{ronen_accurate_2004, pounders_diffusion_2009, kavenoky_sph_1978, fen_modelling_1992,
-tamang_multilevel_2014, koebke_new_1980}.
+\cite{kavenoky_sph_1978, koebke_new_1980, gross_comprehensive_2023, tamang_multilevel_2014}.
 
 In this paper, we propose a hybrid $S_N$-diffusion neutronics method to improve control rod
-modeling in neutron diffusion solvers. In essence, the hybrid method is an iterative method that
-adaptively applies the $S_N$ discrete ordinates neutron transport method on subregions containing
-the control rod to obtain pointwise transport corrections for the diffusion method.
-This paper presents the theoretical background and computational algorithm for the hybrid method
-and verification results through several \gls*{MSR}-based 1-D test cases.
-
-% Section \ref{sec:summary-nts-mtds} highlights the poor performance of neutron diffusion
-% methods for calculating neutron fluxes near control rods. Strong neutron absorption in the control
-% rod region produces a highly anisotropic neutron flux extending some distance outside the control
-% rod. Neutron transport methods, which retain angular dependence of the neutron flux to various
-% extents, generally fare better than neutron diffusion methods, which have isotropic diffusion
-% coefficients. However, neutron transport methods are also generally more computationally expensive,
-% given the increased dimensionality of the problem from the angular component. Adding an angular
-% dimension to the existing geometric and neutron energy group dimensions dramatically
-% increases the problem size and the computational resources necessary to solve the system. Many past
-% efforts have tried introducing
-% transport correction techniques to improve neutron flux and multiplication factor estimates in
-% diffusion-based methods. Other than control rod regions, these techniques may also correct
-% homogenization errors introduced by spatial homogenization of fuel assemblies and other
-% structures within a reactor core. They invariably rely on neutron transport methods to generate
-% transport corrections in the form of corrected diffusion coefficients
-% \cite{bretscher_computing_1997, scherer_determination_1976, ronen_accurate_2004,
-% pounders_diffusion_2009, kavenoky_sph_1978}, boundary conditions \cite{davison_influence_1951,
-% pellaud_extrapolation_1968, fen_modelling_1992}, Eddington factors, or discontinuity factors
-% \cite{koebke_new_1980}.
+modeling in neutron diffusion solvers. This iterative method adaptively applies the $S_N$ discrete
+ordinates neutron transport method in subregions containing the control rod to obtain pointwise
+transport corrections for the diffusion method.
+This new method differs from 
 
 \section{Theory} \label{sec:theory}
 
-% Section \ref{sec:saaf} provides the mathematical derivation for the discretized weak form of the
-% \gls*{SAAF} $S_N$ neutron transport equations. Section \ref{sec:transport-correction} provides the
-% derivations for the transport correction formulations we investigated for use in the hybrid method.
-% Section \ref{sec:hybrid-algorithm} details the iteration algorithm for the hybrid method. Section
-% \ref{sec:sn-bc} provides the boundary conditions formulated for the $S_N$ calculations in the
-% hybrid method. In Section \ref{sec:buffer-region}, we discuss how transport corrections are handled
-% in the hybrid method. Lastly, Section \ref{sec:hybrid-summary} summarizes the hybrid method and its
-% implementation.
-
 \subsection{Multigroup \Gls{SAAF} $S_N$ Neutron Transport Method} \label{sec:saaf}
 
-We implemented the hybrid methods using finite element method numerical solver capabilities available through
-Moltres \cite{lindsay_introduction_2018} and the \gls*{MOOSE} framework.
+We implemented the hybrid method using finite element method numerical solver capabilities available through
+Moltres \cite{lindsay_introduction_2018} and the \gls*{MOOSE} framework \cite{giudicelli_30_2024}.
 The derivation for the \gls*{SAAF} formulation of the $S_N$ method and its
 implementation in Moltres follows closely the derivation developed by Wang et al.\
-\cite{wang_diffusion_2014}.
+\cite{wang_diffusion_2014} in Griffin (formerly Rattlesnake). This formulation reformulates
+the first-order $S_N$ equations as second-order equations, enabling the use of fast and scalable
+HYPRE multigrid preconditioners.
 
-The time-independent, multigroup neutron transport equation defined on the 3-D spatial domain
-$\mathcal{D}$ and 2-D unit sphere angular domain $\mathcal{S}$ is:
+The time-independent, multigroup neutron transport equations and boundary conditions defined on the
+3-D spatial domain $\mathcal{D}$ and 2-D unit sphere angular domain $\mathcal{S}$ is:
 %
 \begin{multline}
   \hat{\Omega}\cdot\nabla\Psi_g(\vec{r},\hat{\Omega},t) + \Sigma_{t,g}
@@ -216,146 +184,127 @@ $\mathcal{D}$ and 2-D unit sphere angular domain $\mathcal{S}$ is:
   \alpha^s_g\Psi_g(\vec{r},\hat{\Omega}_r)
   \mbox{ on } \vec{r} \in \partial\mathcal{D} \mbox{ and } \hat{\Omega}\cdot\hat{n}_b < 0.
   \label{eq:mg-nte-bc}
-%  \shortintertext{where}
-%  \begin{align*}
-%    \chi_{p,g} &= \mbox{prompt fission neutron spectrum in group $g$,} \\
-%    \beta &= \sum^I_{i=1} \beta_i = \mbox{total delayed neutron fraction,} \\
-%    \chi_{d,g} &= \mbox{delayed fission neutron spectrum in group $g$,} \\
-%    \lambda_i &= \mbox{decay constant of precursor group $i$,} \\
-%    C_i &= \mbox{delayed neutron precursor concentration for group $i$,} \\
-%    \Psi^\text{inc}_g &= \mbox{incident surface source in group $g$,} \\
-%    \alpha^s_g &= \mbox{specular reflectivity on }\partial \mathcal{D} \mbox{ for group }g, \\
-%    \hat{\Omega}_r &= \hat{\Omega}-2(\hat{\Omega}\cdot \hat{n}_b)\hat{n}_b, \\
-%    \hat{n}_b &= \mbox{outward unit normal vector on the boundary.}
-%  \end{align*}
 \end{gather}
 %
-In order to introduce operators and facilitate subsequent mathematical derivations, we will define
-the following vector forms:
+%To facilitate subsequent mathematical derivations, we will define the following vector forms, which
+%will allow for operator notation to be used:
+%%
+%\begin{gather}
+%  \bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \Psi_1 \\
+%    \vdots \\
+%    \Psi_G
+%  \end{bmatrix},
+%  \bm{\Phi} \equiv \int_S \bm{\Psi}d\hat{\Omega} \equiv
+%  \begin{bmatrix}
+%    \phi_1 \\
+%    \vdots \\
+%    \phi_G
+%  \end{bmatrix},
+%  \bm{\frac{\Psi}{v}} \equiv
+%  \begin{bmatrix}
+%    \frac{\Psi_1}{v_1} \\
+%    \vdots \\
+%    \frac{\Psi_G}{v_G}
+%  \end{bmatrix}.
+%\end{gather}
+%%
+%The neutron streaming ($\mathbb{L}_1$), collision ($\mathbb{L}_2$), scattering ($\mathbb{S}$),
+%fission ($\mathbb{F}$), and boundary operators are defined as:
+%%
+%\begin{gather}
+%  \mathbb{L}_1\bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \hat{\Omega}\cdot\nabla\Psi_1 \\
+%    \vdots \\
+%    \hat{\Omega}\cdot\nabla\Psi_G \\
+%  \end{bmatrix},
+%  \mathbb{L}_2\bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \Sigma_{t,1}\Psi_1 \\
+%    \vdots \\
+%    \Sigma_{t,G}\Psi_G
+%  \end{bmatrix},
+%  \mathbb{S}\bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \sum^G_{g'=1}\int_S \Sigma_s^{g'\rightarrow 1}\Psi_{g'}d\hat{\Omega} \\
+%    \vdots \\
+%    \sum^G_{g'=G}\int_S \Sigma_s^{g'\rightarrow G}\Psi_{g'}d\hat{\Omega}
+%  \end{bmatrix}, \nonumber \\
+%  \mathbb{F}\bm{\Psi} \equiv \frac{1}{4\pi}\mathbb{F}_0\bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \frac{1}{4\pi}\chi_{1}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'} \\
+%    \vdots \\
+%    \frac{1}{4\pi}\chi_{G}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'}
+%  \end{bmatrix},
+%  \mathbb{B}\bm{\Psi} \equiv
+%  \begin{bmatrix}
+%    \alpha^s_1\Psi_1(\hat{\Omega}_r) \\
+%    \vdots \\
+%    \alpha^s_G\Psi_G(\hat{\Omega}_r)
+%  \end{bmatrix}.
+%\end{gather}
+%%
+%Using this notation, Eq.\ \ref{eq:mg-nte} \& \ref{eq:mg-nte-bc} can be expressed as:
+%%
+%\begin{gather}
+%  \mathbb{L}_1\bm{\Psi} + \mathbb{L}_2\bm{\Psi} = \mathbb{S}\bm{\Psi} + \mathbb{F}\bm{\Psi}, \label{eq:nte-vec} \\
+%  \bm{\Psi} = \bm{\Psi}^\text{inc} + \mathbb{B}\bm{\Psi}.
+%\end{gather}
+%
+We define inner products involving volume and surface integrals over the spatial domain for
+expressing the weak formulation of multigroup $S_N$ equations for finite element analysis:
 %
 \begin{gather}
-  \bm{\Psi} \equiv
-  \begin{bmatrix}
-    \Psi_1 \\
-%    \Psi_2 \\
-    \vdots \\
-    \Psi_G
-  \end{bmatrix},
-  \bm{\Phi} \equiv \int_S \bm{\Psi}d\hat{\Omega} \equiv
-  \begin{bmatrix}
-    \phi_1 \\
-%    \phi_2 \\
-    \vdots \\
-    \phi_G
-  \end{bmatrix},
-  \bm{\frac{\Psi}{v}} \equiv
-  \begin{bmatrix}
-    \frac{\Psi_1}{v_1} \\
-%    \frac{\Psi_2}{v_2} \\
-    \vdots \\
-    \frac{\Psi_G}{v_G}
-  \end{bmatrix}.
+  \left(\Psi^*, \Psi\right)_\mathcal{D} \equiv \int_\mathcal{D}d\vec{r}
+  \sum_{i\in E_e}\Psi^*_i b_i(\vec{r})\sum_{j\in E_e}\Psi_jb_j(\vec{r}), \\
+  \left(\Psi^*, \Psi\right)_{\partial\mathcal{D}} \equiv
+  \sum_{s\in\partial\mathcal{D}}\int_s d\vec{r}\sum_{i\in E_s}\Psi^*_i b_i(\vec{r})\sum_{j\in E_s}
+  \Psi_j b_j(\vec{r}),
 \end{gather}
 %
-We also define the following operators:
+where $b_i$ is a set of shape functions such that any function can be approximated as:
 %
 \begin{gather}
-  \mathbb{L}_1\bm{\Psi} \equiv
-  \begin{bmatrix}
-    \hat{\Omega}\cdot\nabla\Psi_1 \\
-%    \hat{\Omega}\cdot\nabla\Psi_2 \\
-    \vdots \\
-    \hat{\Omega}\cdot\nabla\Psi_G \\
-  \end{bmatrix},
-  \mathbb{L}_2\bm{\Psi} \equiv
-  \begin{bmatrix}
-    \Sigma_{t,1}\Psi_1 \\
-%    \Sigma_{t,2}\Psi_2 \\
-    \vdots \\
-    \Sigma_{t,G}\Psi_G
-  \end{bmatrix},
-  \mathbb{S}\bm{\Psi} \equiv
-  \begin{bmatrix}
-    \sum^G_{g'=1}\int_S \Sigma_s^{g'\rightarrow 1}\Psi_{g'}d\hat{\Omega} \\
-%    \sum^G_{g'=2}\int_S \Sigma_s^{g'\rightarrow 2}\Psi_{g'}d\hat{\Omega} \\
-    \vdots \\
-    \sum^G_{g'=G}\int_S \Sigma_s^{g'\rightarrow G}\Psi_{g'}d\hat{\Omega}
-  \end{bmatrix}, \nonumber \\
-  \mathbb{B}\bm{\Psi} \equiv
-  \begin{bmatrix}
-    \alpha^s_1\Psi_1(\hat{\Omega}_r) \\
-%    \alpha^s_2\Psi_2(\hat{\Omega}_r) \\
-    \vdots \\
-    \alpha^s_G\Psi_G(\hat{\Omega}_r)
-  \end{bmatrix},
-  \mathbb{F}\bm{\Psi} \equiv \frac{1}{4\pi}\mathbb{F}_0\bm{\Psi} \equiv
-  \begin{bmatrix}
-    \frac{1}{4\pi}\chi_{1}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'} \\
-%    \frac{1}{4\pi}\chi_{2}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'} \\
-    \vdots \\
-    \frac{1}{4\pi}\chi_{G}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'}
-  \end{bmatrix}.
+  f(\vec{r}) = \sum^{N_b}_{k=1}f_k b_k(\vec{r}),
 \end{gather}
 %
-Eq.\ \ref{eq:mg-nte} \& \ref{eq:mg-nte-bc} can be reexpressed as:
-%
-\begin{gather}
-  \mathbb{L}_1\bm{\Psi} + \mathbb{L}_2\bm{\Psi} = \mathbb{S}\bm{\Psi} + \mathbb{F}\bm{\Psi}, \label{eq:nte-vec} \\
-  \bm{\Psi} = \bm{\Psi}^\text{inc} + \mathbb{B}\bm{\Psi}.
-\end{gather}
+with $N_b$ being the dimension of the function space. $E_e$ and $E_s$ are index sets of non-zero
+shape functions within each element $e$ or surface $s$.
 
-Finally, we present the weak forms of each term in the \gls*{SAAF} formulation of the multigroup
-$S_N$ neutron transport equations with void treatment \cite{wang_diffusion_2014} for handling the
-$1/\Sigma_{t,g}$ term in near-void regions. We define the inner products
+In addition to the \gls*{SAAF} formulation, a void treatment scheme \cite{wang_diffusion_2014}
+provides numerical stabilization in near-void regions where the $1/\Sigma_{t,g}$ factors in the
+streaming and source terms evaluate to very large values. The final weak formulations of the
+individual terms in the \gls*{SAAF} multigroup $S_N$ equations are given as:
 %
 \begin{gather}
-  \left(\bm{a},\bm{b}\right)_\mathcal{D} \equiv \sum^G_{g=1} \int_\mathcal{D}d\vec{r}
-  \sum_{i\in E_e}a_{g,i}b_i(\vec{r})\sum_{j\in E_e}b_{g,j}b_j(\vec{r}), \\
-  \left(\bm{a},\bm{b}\right)_{\partial\mathcal{D}} \equiv \sum^G_{g=1}
-  \sum_{s\in\partial\mathcal{D}}\int_s d\vec{r}\sum_{i\in E_s}a_{g,i}b_i(\vec{r})\sum_{j\in E_s}
-  b_{g,j}b_j(\vec{r}),
-\end{gather}
-%
-involving volume and surface integrals over the spatial domain.
-%
-\begin{gather}
-  \mbox{Time derivative: }
-  \left(\left(\mathbb{I}+\bm{\tau}\mathbb{L}_1\right)\bm{\Psi}^*,
-  \frac{\partial}{\partial t}\left(\frac{\bm{\Psi}}{\bm{v}}\right)\right) =
-  \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d}+\tau_g\hat{\Omega}_d\cdot\Psi^*_{g,d},
-  \frac{\Psi_{g,d}}{v_g}\right)_\mathcal{D} \label{eq:time-derivative} \\
-  \mbox{Streaming: }
-  \left(\mathbb{L}_1\bm{\Psi}^*,
-  \left(\bm{\tau}\mathbb{L}_1-\mathbb{I}+\bm{\tau}\mathbb{L}_2\right)\bm{\Psi}\right) =
+  \shortintertext{Streaming term:}
+%  \left(\mathbb{L}_1\bm{\Psi}^*,
+%  \left(\bm{\tau}\mathbb{L}_1-\mathbb{I}+\bm{\tau}\mathbb{L}_2\right)\bm{\Psi}\right) =
   \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\hat{\Omega}_d\cdot\nabla\Psi^*_{g,d},\tau_g\hat{\Omega}
   \cdot\nabla\Psi_{g,d}-(1-\tau_g\Sigma_{t,g})\Psi_{g,d}\right)_\mathcal{D} \\
-  \mbox{Collision: }
-  \left(\mathbb{L}_2\bm{\Psi}^*,\bm{\Psi}\right) =
+  \shortintertext{Collision term: }
+%  \left(\mathbb{L}_2\bm{\Psi}^*,\bm{\Psi}\right) =
   \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d},\Sigma_{t,g}\Psi_{g,d}\right)_\mathcal{D} \\
-  \shortintertext{Scattering:}
-  \left(\left(\mathbb{I}+\bm{\tau}\mathbb{L}_1\right)\bm{\Psi}^*,\mathbb{S}\bm{\Psi}\right) =
+  \shortintertext{Scattering term:}
+%  \left(\left(\mathbb{I}+\bm{\tau}\mathbb{L}_1\right)\bm{\Psi}^*,\mathbb{S}\bm{\Psi}\right) =
   \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d}+\tau_g\hat{\Omega}_d\cdot\nabla\Psi^*_{g,d},
   \sum^G_{g'=1}\sum^L_{l=0}\Sigma^{g'\rightarrow g}_{s,l}\sum^l_{m=-l}
   \frac{2l+1}{w}Y_{l,m}(\hat{\Omega}_d)\phi_{g',l,m}\right)_\mathcal{D} \\
-  \mbox{Fission source: }
-  \left(\left(\mathbb{I}+\bm{\tau}\mathbb{L}_1\right)\bm{\Psi}^*,\mathbb{F}\bm{\Psi}\right) =
+  \shortintertext{Fission source term: }
+%  \left(\left(\mathbb{I}+\bm{\tau}\mathbb{L}_1\right)\bm{\Psi}^*,\mathbb{F}\bm{\Psi}\right) =
   \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d}+\tau_g\hat{\Omega}_d\cdot\nabla\Psi^*_{g,d},
   \frac{1}{w}\frac{\chi_g}{k}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'}\right)_\mathcal{D}
 \end{gather}
 %
-$\tau_g$ is a numerical stabilization parameter borne from the void treatment scheme.
-The vacuum, boundary source, and reflecting boundary terms are given as:
+$\tau_g$ is a numerical stabilization parameter borne from the void treatment scheme. $w_d$ are
+weight values from the angular discretization scheme such that $w=\sum^{N_d}_{d=1} w_d$.
+The boundary source and reflecting boundary terms are given as:
 %
 \begin{gather}
-  \langle\bm{\Psi}^*,\bm{\Psi}\rangle^+ - \langle\bm{\Psi}^*,\bm{\Psi}^\text{inc}\rangle^- =
-  \begin{cases}
-    \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d},
-    \hat{\Omega}_d\cdot\hat{n}_b\Psi_{g,d}\right)_{\partial\mathcal{D}},
-    & \hat{\Omega}\cdot\hat{n}_b>0,\vec{r}\in\partial\mathcal{D} \\
-    0,
-    & \hat{\Omega}\cdot\hat{n}_b<0,\vec{r}\in\partial\mathcal{D}
-  \end{cases}, \\
-  \langle\bm{\Psi}^*,\bm{\Psi}\rangle^+ - \langle\bm{\Psi}^*,\bm{\Psi}^\text{inc}\rangle^- =
+%  \langle\bm{\Psi}^*,\bm{\Psi}\rangle^+ - \langle\bm{\Psi}^*,\bm{\Psi}^\text{inc}\rangle^- =
+  \mbox{Boundary source term: }
   \begin{cases}
     \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d},
     \hat{\Omega}_d\cdot\hat{n}_b\Psi_{g,d}\right)_{\partial\mathcal{D}},
@@ -364,7 +313,8 @@ The vacuum, boundary source, and reflecting boundary terms are given as:
     \hat{\Omega}_d\cdot\hat{n}_b\Psi^\text{inc}_{g,d}\right)_{\partial\mathcal{D}},
     & \hat{\Omega}\cdot\hat{n}_b<0,\vec{r}\in\partial\mathcal{D}
   \end{cases}, \label{eq:boundary-source} \\
-  \langle\bm{\Psi}^*,\bm{\Psi}\rangle^+ - \langle\bm{\Psi}^*,\mathbb{B}\bm{\Psi}\rangle^- =
+%  \langle\bm{\Psi}^*,\bm{\Psi}\rangle^+ - \langle\bm{\Psi}^*,\mathbb{B}\bm{\Psi}\rangle^- =
+  \mbox{Reflecting boundary term: }
   \begin{cases}
     \sum^G_{g=1}\sum^{N_d}_{d=1}w_d\left(\Psi^*_{g,d},
     \hat{\Omega}_d\cdot\hat{n}_b\Psi_{g,d}\right),
@@ -375,53 +325,20 @@ The vacuum, boundary source, and reflecting boundary terms are given as:
   \end{cases}, \label{eq:reflecting-bc}
 \end{gather}
 %
-where $\hat{\Omega}_{d_r} = \hat{\Omega}_d - 2(\hat{\Omega}_d\cdot\hat{n}_b)\hat{n}_b$.
+where $\Psi^\text{inc}_{g,d}=0$ for vacuum boundaries and
+$\hat{\Omega}_{d_r} = \hat{\Omega}_d - 2(\hat{\Omega}_d\cdot\hat{n}_b)\hat{n}_b$ is the neutron
+reflection direction.
 
-\subsection{Transport-Corrected Neutron Diffusion Method} \label{sec:transport-correction}
+\subsection{Transport-Corrected Multigroup Neutron Diffusion Method} \label{sec:transport-correction}
 
-% In this work, we explored two options for applying transport corrections to the neutron
-% diffusion equations: a diffusion correction scheme and a drift correction scheme.
-% We performed investigations on 1-D reactor models with both transport correction
-% schemes but eventually elected to use the drift correction scheme for 2-D reactor models
-% due to superior numerical properties.
-% We implemented the drift correction-based hybrid
-% method on Moltres \cite{lindsay_moltres_2017} and the diffusion correction-based hybrid method
-% using Python.
-
-% \subsubsection{Diffusion Correction Term} \label{sec:diffusion-correction}
-% 
-% Diffusion corrections involve replacing the diffusion coefficient $D_g$ in the
-% diffusion term with ``optimal'' diffusion coefficients based on
-% pointwise transport corrections. We used a formulation that incorporates pointwise
-% corrections to the neutron diffusion flux solution from the $S_N$-derived flux solution as follows:
-% %
-% \begin{align}
-%   D^s_g(x) &= -J^{tr}_g(x)\bigg/\frac{d\phi^{tr}_g(x)}{dx}. \label{eq:svdc}
-% \end{align}
-% %
-% where $D^s_g$ is the diffusion correction parameter, and the $tr$ superscript denotes the
-% transport-derived neutron
-% current and scalar flux solutions from the $S_N$ method. Transport corrections introduced through
-% $J_{tr}$ are scaled by the flux gradient. We assumed that it varies continuously and is
-% at least once differentiable except at dissimilar material interfaces. $D^s_g$ provides
-% pointwise corrections to closely match the diffusion flux solution to the $S_N$ flux solution.
-% By replacing $D_g$ with $D^s_g$, we are effectively adding the following transport correction term
-% %
-% \begin{gather}
-%   -\frac{\partial}{\partial x}(D^s_g-D_g)\frac{\partial\phi_g}{\partial x}
-% \end{gather}
-% to the neutron diffusion equations. Alternatively, we may define
-% $\partial D\equiv\left(D^s_g-D_g)\right)$. This alternative form shows that diffusion
-% correction applies a multiplicative closure that scales with the flux gradient.
-
-% \subsubsection{Drift Correction Term} \label{sec:drift-correction}
-
-The general form of drift correction terms to be added to the neutron diffusion equations is a
-first-order derivative term $\nabla\cdot \vec{D}_g\phi_g$.
+For transport corrections to the multigroup neutron diffusion equations, we adopt drift correction
+terms which are expressed as first-order derivative term $\nabla\cdot \vec{D}_g\phi_g$. Drift
+coefficient values correct for the inaccuracy of the diffusion approximation on the streaming term
+and the omission of anisotropic effects in neutron diffusion theory.
 Derivations for the drift terms depend on the discretization schemes of the high- and low-order
 equations. For this work, we adopted drift terms derived by Wang et al.\
 \cite{wang_diffusion_2014}. The neutron balance equation derived from
-integrating \gls*{SAAF} equation is:
+integrating the \gls*{SAAF} $S_N$ equation over the angular variable is:
 %
 \begin{multline}
   \left(\bm{\Phi}^*,\frac{\partial}{\partial t}\left(\frac{\bm{\Phi}}{\bm{v}}\right)\right)_\mathcal{D}
@@ -448,8 +365,8 @@ and a vacuum boundary correction term with the boundary coefficient vector defin
   \bm{\gamma} \equiv \frac{\bm{J}^\text{out}}{\bm{\Phi}}-\frac{1}{2}\bm{I}.
 \end{gather}
 %
-With the $S_N$ angular discretization scheme, the drift and boundary correction vector components
-can be evaluated as
+With $S_N$ angular discretization, the drift and boundary correction vector components are
+evaluated as
 %
 \begin{gather}
   \vec{D}_g = \frac{\sum^{N_d}_{d=1}w_d\left(\tau_g\hat{\Omega}_d\hat{\Omega}_d\cdot\nabla\Psi_{g,d}
@@ -463,13 +380,13 @@ can be evaluated as
 
 \subsection{$S_N$-Diffusion Iteration Algorithm \& Boundary Coupling} \label{sec:hybrid-algorithm}
 
-In order to reduce the computational cost of the high-level $S_N$ calculation in a reactor
+To reduce the computational cost of the high-level $S_N$ calculation in a reactor
 simulation, we propose reducing the problem domain of the $S_N$ method to a
 \textit{correction subregion} containing the control rod
 and its vicinity. Consequently, the hybrid $S_N$-diffusion method may retain accurate neutron flux
 and current estimates around the control rod region from the $S_N$ method while making significant
 computational cost savings by treating most of the reactor geometry with the neutron diffusion
-method alone. Henceforth, we will refer to the $S_N$ calculation on the correction
+method alone. Henceforth, we will refer to the $S_N$ calculation in the correction
 region as the $S_N$ \textit{subproblem} or \textit{subsolver}. We define the full problem
 domain and the correction subregion as $V_0$ and $V_1$, respectively, where
 $V_1\subseteq V_0$. The iterative algorithm for the hybrid $S_N$-diffusion method is as follows:
@@ -492,11 +409,11 @@ $V_1\subseteq V_0$. The iterative algorithm for the hybrid $S_N$-diffusion metho
 \end{enumerate}
 
 For the hybrid $S_N$-diffusion method to converge, it requires appropriate boundary conditions for
-the $S_N$ subproblem.
-Given that we want to limit the coverage of $V_1$ to the control rod region and its
-immediate vicinity, $V_1$ should be sufficiently smaller than $V_0$, but large enough to capture
-anisotropies in the flux due to the control rod. As a consequence, the boundaries $\partial V_1$ 
-lie well within $V_0$. We may obtain the best boundary source estimate for the $S_N$ subproblem by
+the $S_N$ subproblem. Given that we want to limit the coverage of $V_1$ to the control rod region
+and its immediate vicinity, $V_1$ should be sufficiently smaller than $V_0$, but large enough for
+the boundary $\partial V_1$ to be far enough away from the rod that the $S_N$-diffusion interface
+has physics that are favorable to diffusion. Therefore, the boundary $\partial V_1$ 
+lies within $V_0$. We may obtain the best boundary source estimate for the $S_N$ subproblem by
 applying the $P_1$ approximation for evaluating the neutron angular flux along
 the discrete ordinates $\hat{\Omega}_d$ of the $S_N$ angular quadrature set as follows
 %
@@ -523,8 +440,8 @@ discarded. Right before each
 neutron diffusion iteration, the solver adaptively determines a cutoff boundary for $V_1'$ which
 determines the extent in $V_1$ where the drift correction terms are applied.
 A natural/intuitive criterion for the location of the cutoff boundary
-would be wherever the components of the drift correction variable $\vec{D}_g$ is zero, i.e.,
-wherever the components change signs. The reasons for this criterion are twofold. Firstly, at
+would be wherever the components of the drift correction variable $\vec{D}_g$ is zero (i.e.,
+wherever the components change signs). The reasons for this criterion are twofold. Firstly, at
 points where the $\vec{D}_g$ components are zero, the flux is approximately isotropic along the
 axes corresponding to the components because value of $\vec{D}_g$ represents how much correction a
 standard neutron diffusion model requires. Secondly, this choice preserves the smoothness of the
@@ -533,12 +450,11 @@ neutron scalar flux gradient.
 \section{Model Setup}
 
 We modeled the 1-D models in this work after the \gls*{MSRE} design \cite{robertson_msre_1965}. We
-employed the OpenMC Monte
-Carlo neutral particle transport software \cite{romano_openmc:_2015} for generating group constants
+employed OpenMC \cite{romano_openmc:_2015} for generating group constants
 for the hybrid method and reference solutions for verification. All multigroup
 neutronics simulations ran with an eight neutron energy group structure developed by Jaradat
-\cite{jaradat_development_2021-1}. The OpenMC models ran on continuous energy (OpenMC-CE) and
-multigroup (OpenMC-MG) modes and utilized the ENDF/B-VII.1 nuclear data library.
+\cite{jaradat_development_2021-1} for \gls*{MSRE} analyses. The OpenMC models ran on continuous
+energy (OpenMC-CE) and multigroup (OpenMC-MG) modes and utilized ENDF/B-VII.1.
 
 This work evaluates six 1-D test cases with increasing complexity to verify the $S_N$ and hybrid
 $S_N$-diffusion implementations and to test the performance of the hybrid
@@ -551,7 +467,7 @@ cell models with reflecting boundaries on the right-side boundaries. Cases 2a, 2
 are 1-D half-core models with vacuum boundaries on the right-side boundaries.
 
 All material compositions and densities, except the control rod, follow
-reference data at 900 K from \gls*{MSRE} benchmark specifications \cite{fratoni_molten_2020}.
+reference data at 900 K from \gls*{MSRE} benchmark specifications.
 We reduced the Gd$_2$O$_3$ content in the control rod region from 70 wt\% to 0.35 wt\% to bring the
 rod worth down from approximately 55000 pcm to 20000 pcm in the 1-D models.
 %
@@ -567,27 +483,21 @@ rod worth down from approximately 55000 pcm to 20000 pcm in the 1-D models.
 
 \section{Numerical Results \& Discussion}
 
-The hybrid method shares some similarities with diffusion-based acceleration schemes
-for the neutron transport methods which do not require the neutron transport side of the
-calculations to fully converge \cite{wang_diffusion_2014}. The typical convergence threshold value
-required for converged 1-D neutron flux calculations is $10^{-8}$. We varied the convergence
-tolerance value for the $S_N$ subsolver to find the optimal value for maintaining sufficient
-solution accuracy and minimizing computational costs.
+The hybrid method shares some similarities with diffusion-based acceleration schemes for the
+neutron transport methods which do not require the neutron transport side of the calculations to
+fully converge \cite{wang_diffusion_2014}. The typical convergence threshold value required for
+converged 1-D neutron flux calculations is $10^{-8}$. We varied the convergence tolerance value for
+the $S_N$ subsolver for maintaining accuracy while minimizing computational costs.
 Table \ref{table:sn-tol} lists the number of outer iterations required by the hybrid method for
 a given set of $S_8$ subsolver convergence tolerance values in Case 3b.
 
-\begin{table}[htb]
-  \begin{minipage}{0.45\columnwidth}
+\begin{table}[t]
+  \begin{minipage}{0.49\columnwidth}
     \centering
     \small
     \caption{Number of outer iterations in hybrid method calculations of Case 3b for a given set of
     convergence tolerance values imposed on the $S_8$ subsolver.}
-    \begin{tabular}{S S} % S S S S S}
-  %    \toprule
-  %    $S_8$ subsolver tolerance, $\epsilon_\text{tol}$ & {$10^{-8}$} & {$10^{-7}$} & {$10^{-6}$} & {$10^{-5}$} & {$10^{-4}$} & {$10^{-3}$} \\
-  %    \midrule
-  %    Number of outer iterations & 3 & 3 & 3 & 2 & 2 & 1 \\
-  %    \bottomrule
+    \begin{tabular}{S S}
       \toprule
       {$S_8$ subsolver tolerance} & {No.\ of outer iterations} \\
       \midrule
@@ -601,11 +511,11 @@ a given set of $S_8$ subsolver convergence tolerance values in Case 3b.
     \end{tabular}
     \label{table:sn-tol}
   \end{minipage}
-  \begin{minipage}{0.55\columnwidth}
+  \begin{minipage}{0.49\columnwidth}
     \centering
-    \includegraphics[width=0.75\columnwidth]{sn-tol}
-    \captionof{figure}{$k_\text{eff}$ error estimates of Case 3b for a range of $S_8$ subsolver
-    convergence tolerance values. The $q=1.333$ line represents the approximate rate of
+    \includegraphics[width=0.8\columnwidth]{sn-tol}
+    \captionof{figure}{Error estimates of $k_\text{eff}$ in Case 3b as a function of
+    convergence tolerance. $q=1.333$ represents the approximate rate of
     convergence.}
     \label{fig:sn-tol}
   \end{minipage}
@@ -617,16 +527,6 @@ with respect to the $S_N$ subsolver convergence tolerance value. Based on the re
 $\epsilon_\text{tol}$ to $10^{-5}$ is the best balance between accuracy and computational
 cost because the $k_\text{eff}$ error is less than 0.01 pcm and the number of outer iterations
 would increase from 2 to 3 if the tolerance value is further tightened.
-
-% \begin{figure}[htb!]
-%   \centering
-%   \includegraphics[width=0.4\columnwidth]{sn-tol}
-%   \caption{$k_\text{eff}$ error estimates of Case 3b for a range of convergence tolerance values
-%   imposed on the $S_8$ subsolver relative to the reference $k_\text{eff}$ value when
-%   $\epsilon_\text{tol}=10^{-8}$. The $q=1.333$ line represents the approximate rate of
-%   convergence.}
-%   \label{fig:sn-tol}
-% \end{figure}
 
 Figure \ref{fig:1d-rho} shows the difference in reactivities of OpenMC-MG, $S_8$, neutron
 diffusion, and hybrid methods relative to OpenMC-CE for all test cases. The standard deviations of
@@ -641,6 +541,10 @@ reactivity values fall within the one or two standard deviation range.
   \caption{Difference in reactivity $\rho$ of all neutronics methods investigated relative
   to OpenMC-CE.}
   \label{fig:1d-rho}
+  \includegraphics[width=0.75\columnwidth]{worth}
+  \caption{Percentage difference in rod worth for Cases 2 and 3 of all neutronics methods
+  investigated relative to OpenMC-CE.}
+  \label{fig:1d-worth}
 \end{figure}
 
 For all cases, the OpenMC-MG and the $S_8$ methods show consistent agreement with one another. 
@@ -664,7 +568,7 @@ effect of introducing the control rod region as evidenced by the -1500 pcm and -
 discrepancies relative to OpenMC-CE. The hybrid method fares better with -400 pcm and -300 pcm
 discrepancies.
 
-Moving the discussion to control rod worths, figure \ref{fig:1d-worth} shows the percentage
+Moving the discussion to control rod worths, Figure \ref{fig:1d-worth} shows the percentage
 difference in rod worths for Cases 2 and 3 of OpenMC-MG, $S_8$, neutron diffusion, and hybrid
 methods relative to OpenMC-CE. We calculated the rod worth estimates from each method by taking the
 difference in reactivity between the ``rod out'' (a) and ``rod in'' (b) configurations of Cases 2
@@ -674,18 +578,26 @@ The neutron diffusion methods clearly show up as outliers with rod worth estimat
 of 8\%. The remaining methods cluster around 2.5\% and 3\% percentage difference for Cases
 2 and 3.
 
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=0.98\columnwidth]{case-3b-flux-diff}
+  \caption{Absolute difference in neutron group flux distributions for Case 3b from $S_8$,
+  neutron diffusion, and hybrid methods relative to OpenMC-MG.}
+  \label{fig:3b-flux-diff}
+\end{figure}
+
 Given that the hybrid methods rely on transport corrections derived from the $S_N$ method, the
 $S_8$ rod worth estimates serve as the
 reference point for hybrid method verification. Additionally, errors arising from the multigroup
 approximation affect both hybrid and $S_N$ simulations to similar degrees. The hybrid method
 provides significant improvements in rod worth estimates over the neutron diffusion method.
 %
-\begin{figure}[htb!]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.75\columnwidth]{worth}
-  \caption{Percentage difference in rod worth for Cases 2 and 3 of all neutronics methods
-  investigated relative to OpenMC-CE.}
-  \label{fig:1d-worth}
+  \includegraphics[width=\columnwidth]{case-3b-drift}
+  \caption{Multigroup drift correction ($\vec{D}_g$) $x$-component distributions from the
+  Moltres-hybrid and Moltres-$S_8$ solvers.}
+  \label{fig:3b-drift}
 \end{figure}
 
 Figure \ref{fig:3b-flux-diff} shows the absolute
@@ -700,14 +612,6 @@ exhibits significant flux deviations in groups 1, 2, 7, and 8 near $x=0$ cm. The
 provides significant improvements in neutron flux distributions compared to the neutron diffusion
 method as shown by the generally smaller flux difference values particularly near $x=0$ cm.
 
-\begin{figure}[htb!]
-  \centering
-  \includegraphics[width=\columnwidth]{case-3b-flux-diff}
-  \caption{Absolute difference in neutron group flux distributions for Case 3b from $S_8$,
-  neutron diffusion, and hybrid methods relative to OpenMC-MG.}
-  \label{fig:3b-flux-diff}
-\end{figure}
-
 Figure \ref{fig:3b-drift} shows the drift correction parameter distribution in each neutron energy
 group for Case 3b. We computed the reference drift distributions from reference flux
 solutions of the standard $S_8$ method.
@@ -717,61 +621,11 @@ $x=10$ cm as previously discussed in Section \ref{sec:hybrid-algorithm}. The ada
 buffer region $V_1'$ completely encompasses the region near $x=10$ cm where the drift correction
 distributions deviate from the reference distribution and are thus discarded.
 
-\begin{figure}[htb!]
-  \centering
-  \includegraphics[width=\columnwidth]{case-3b-drift}
-  \caption{Multigroup drift correction ($\vec{D}_g$) $x$-component distributions from the
-  Moltres-hybrid and Moltres-$S_8$ solvers.}
-  \label{fig:3b-drift}
-\end{figure}
-
-% The hybrid $S_N$-diffusion method relies on $S_N$ calculations in the correction subregion to
-% generate flux corrections. Minimizing the size of the correction subregion and the $S_N$ subproblem
-% is essential for the hybrid method to be computationally competitive for time-dependent full-core
-% simulations. I investigated the effect of the correction subregion size on the $k_\text{eff}$ and
-% control rod worth estimates with Cases 3a and 3b by varying the subregion sizes from 10 cm to 40 cm
-% at 5 cm-intervals.
-% 
-% Figures \ref{fig:v1-size-a-k} and \ref{fig:v1-size-b-k} show the $k_\text{eff}$ estimates from the
-% hybrid method for Cases 3a and 3b, respectively. In both cases, the $k_\text{eff}$ values initially
-% decrease as the correction subregion sizes increase before reversing in trend when the subregion
-% size reaches 35 cm and beyond. The $k_\text{eff}$ values vary by up to 164 pcm for Case 3a and 109
-% pcm for Case 3b. An important observation here is that the $k_\text{eff}$ values do not
-% monotonically converge towards the $k_\text{eff}$ estimate from the $S_8$ method. The data implies
-% other significant sources of discrepancies exist beyond those being corrected in the
-% correction subregion by the hybrid method.
-% 
-% \begin{figure}[htb!]
-%   \centering
-%   \includegraphics[width=\columnwidth]{correction-size-b-k}
-%   \caption{$k_\text{eff}$ estimates from the hybrid method for Case 3b with different
-%   correction subregion sizes. The horizontal lines indicate $k_\text{eff}$ estimates from the
-%   OpenMC-CE, OpenMC-MG, and $S_8$ methods.}
-%   \label{fig:v1-size-k}
-% \end{figure}
-% 
-% Figure \ref{fig:v1-size-rho} shows the percentage difference in rod worth relative to OpenMC-CE. 
-% Due to the identical trends observed in the $k_\text{eff}$ estimates of both cases, the control rod
-% worth estimates do not change significantly when the correction subregion
-% sizes change. This indicates limiting the correction subregion size to save
-% computational cost on the expensive $S_N$ calculations has a negligible impact on rod worth
-% estimates. The rod worth estimates for all investigated correction subregion sizes remain within
-% 0.2\% of the $S_8$ method.
-% 
-% \begin{figure}[htb!]
-%   \centering
-%   \includegraphics[width=0.8\columnwidth]{correction-size-rho}
-%   \caption{Percentage difference in rod worth from the hybrid method relative to OpenMC-CE for
-%     Cases 3a and 3b with different correction subregion sizes. The horizontal lines indicate
-%     equivalent rod worth differences from the OpenMC-MG and $S_8$ methods.}
-%   \label{fig:v1-size-rho}
-% \end{figure}
-
 \section{CONCLUSIONS}
 
 This paper presents a hybrid $S_N$-diffusion method aimed at control rod modeling in time-dependent
 simulations. The method involves generating drift correction parameters within a control rod and
-its vicinity using the $S_N$ method for the neutron diffusion method. The transport-corrected
+its vicinity, using the $S_N$ method for the neutron diffusion method. The transport-corrected
 subregion size adaptively changes in response to the drift correction distributions. We implemented
 this method alongside the preexisting neutron diffusion solver in Moltres, a \gls*{MOOSE}-based
 application. The reactivity and rod worth results in \gls*{MSR}-based 1-D test cases show the hybrid
@@ -779,12 +633,12 @@ method accurately reproduces rod worth estimates. The drift correction parameter
 distributions indicate that the influence of the rod on the drift, and
 consequently the flux, extend to approximately $x=5$ cm before the drift distribution settles on a
 regular repeating pattern influenced by the fuel-graphite lattice structure. Further work is
-ongoing for the extension of the hybrid method to 2-D and 3-D models and application to
+ongoing for the extension of the hybrid method to 2-D and 3-D models and its application to
 time-dependent simulations.
 
 \section*{ACKNOWLEDGEMENTS}
-Sun Myung Park was supported by a research assistantship provided by the Nuclear, Plasma, \&
-Radiological Engineering (NPRE) department at the University of Illinois Urbana-Champaign (UIUC).
+Sun Myung Park was supported by a research assistantship provided by the Department of Nuclear,
+Plasma, \& Radiological Engineering (NPRE) at the University of Illinois Urbana-Champaign (UIUC).
 
 \bibliographystyle{mc2025}
 \bibliography{bibliography}
