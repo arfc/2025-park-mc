@@ -146,14 +146,16 @@ Routine time-dependent and spatially-resolved reactor analyses remain in the dom
 diffusion methods due to the large computational expense of neutron transport methods. Several
 transport correction techniques exist in the literature for improving neutron flux and
 $k_\text{eff}$ estimates of neutron diffusion methods augmented by correction parameters in
-various forms
-\cite{kavenoky_sph_1978, koebke_new_1980, gross_comprehensive_2023, tamang_multilevel_2014}.
+various forms \cite{kavenoky_sph_1978, koebke_new_1980, gross_comprehensive_2023,
+tamang_multilevel_2014, stehle_hybrid_2014}.
 
 In this paper, we propose a hybrid $S_N$-diffusion neutronics method to improve control rod
 modeling in neutron diffusion solvers. This iterative method adaptively applies the $S_N$ discrete
 ordinates neutron transport method in subregions containing the control rod to obtain pointwise
 transport corrections for the diffusion method.
-This new method differs from 
+This new method is unique in its approach towards adaptive domain decomposition into transport and
+diffusion problem subdomains through on-the-fly evaluations of the transport correction
+parameter distributions.
 
 \section{Theory} \label{sec:theory}
 
@@ -165,7 +167,7 @@ The derivation for the \gls*{SAAF} formulation of the $S_N$ method and its
 implementation in Moltres follows closely the derivation developed by Wang et al.\
 \cite{wang_diffusion_2014} in Griffin (formerly Rattlesnake). This formulation reformulates
 the first-order $S_N$ equations as second-order equations, enabling the use of fast and scalable
-HYPRE multigrid preconditioners.
+HYPRE multigrid preconditioners \cite{hypre_hypre_2022}.
 
 The time-independent, multigroup neutron transport equations and boundary conditions defined on the
 3-D spatial domain $\mathcal{D}$ and 2-D unit sphere angular domain $\mathcal{S}$ is:
@@ -185,73 +187,6 @@ The time-independent, multigroup neutron transport equations and boundary condit
   \mbox{ on } \vec{r} \in \partial\mathcal{D} \mbox{ and } \hat{\Omega}\cdot\hat{n}_b < 0.
   \label{eq:mg-nte-bc}
 \end{gather}
-%
-%To facilitate subsequent mathematical derivations, we will define the following vector forms, which
-%will allow for operator notation to be used:
-%%
-%\begin{gather}
-%  \bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \Psi_1 \\
-%    \vdots \\
-%    \Psi_G
-%  \end{bmatrix},
-%  \bm{\Phi} \equiv \int_S \bm{\Psi}d\hat{\Omega} \equiv
-%  \begin{bmatrix}
-%    \phi_1 \\
-%    \vdots \\
-%    \phi_G
-%  \end{bmatrix},
-%  \bm{\frac{\Psi}{v}} \equiv
-%  \begin{bmatrix}
-%    \frac{\Psi_1}{v_1} \\
-%    \vdots \\
-%    \frac{\Psi_G}{v_G}
-%  \end{bmatrix}.
-%\end{gather}
-%%
-%The neutron streaming ($\mathbb{L}_1$), collision ($\mathbb{L}_2$), scattering ($\mathbb{S}$),
-%fission ($\mathbb{F}$), and boundary operators are defined as:
-%%
-%\begin{gather}
-%  \mathbb{L}_1\bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \hat{\Omega}\cdot\nabla\Psi_1 \\
-%    \vdots \\
-%    \hat{\Omega}\cdot\nabla\Psi_G \\
-%  \end{bmatrix},
-%  \mathbb{L}_2\bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \Sigma_{t,1}\Psi_1 \\
-%    \vdots \\
-%    \Sigma_{t,G}\Psi_G
-%  \end{bmatrix},
-%  \mathbb{S}\bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \sum^G_{g'=1}\int_S \Sigma_s^{g'\rightarrow 1}\Psi_{g'}d\hat{\Omega} \\
-%    \vdots \\
-%    \sum^G_{g'=G}\int_S \Sigma_s^{g'\rightarrow G}\Psi_{g'}d\hat{\Omega}
-%  \end{bmatrix}, \nonumber \\
-%  \mathbb{F}\bm{\Psi} \equiv \frac{1}{4\pi}\mathbb{F}_0\bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \frac{1}{4\pi}\chi_{1}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'} \\
-%    \vdots \\
-%    \frac{1}{4\pi}\chi_{G}\sum^G_{g'=1}\nu\Sigma_{f,g'}\phi_{g'}
-%  \end{bmatrix},
-%  \mathbb{B}\bm{\Psi} \equiv
-%  \begin{bmatrix}
-%    \alpha^s_1\Psi_1(\hat{\Omega}_r) \\
-%    \vdots \\
-%    \alpha^s_G\Psi_G(\hat{\Omega}_r)
-%  \end{bmatrix}.
-%\end{gather}
-%%
-%Using this notation, Eq.\ \ref{eq:mg-nte} \& \ref{eq:mg-nte-bc} can be expressed as:
-%%
-%\begin{gather}
-%  \mathbb{L}_1\bm{\Psi} + \mathbb{L}_2\bm{\Psi} = \mathbb{S}\bm{\Psi} + \mathbb{F}\bm{\Psi}, \label{eq:nte-vec} \\
-%  \bm{\Psi} = \bm{\Psi}^\text{inc} + \mathbb{B}\bm{\Psi}.
-%\end{gather}
 %
 We define inner products involving volume and surface integrals over the spatial domain for
 expressing the weak formulation of multigroup $S_N$ equations for finite element analysis:
@@ -332,7 +267,7 @@ reflection direction.
 \subsection{Transport-Corrected Multigroup Neutron Diffusion Method} \label{sec:transport-correction}
 
 For transport corrections to the multigroup neutron diffusion equations, we adopt drift correction
-terms which are expressed as first-order derivative term $\nabla\cdot \vec{D}_g\phi_g$. Drift
+terms which are expressed as $\nabla\cdot \vec{D}_g\phi_g$. Drift
 coefficient values correct for the inaccuracy of the diffusion approximation on the streaming term
 and the omission of anisotropic effects in neutron diffusion theory.
 Derivations for the drift terms depend on the discretization schemes of the high- and low-order
